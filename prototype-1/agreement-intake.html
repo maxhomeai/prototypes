@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Agreement Intake Flow</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../shared/components/Sidenav.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // ArrowLeft icon component
+    const ArrowLeft = ({ size = 20 }) => (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M19 12H5" />
+        <path d="M12 19l-7-7 7-7" />
+      </svg>
+    );
+
+    // Plus icon component
+    const PlusIcon = ({ size = 16 }) => (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </svg>
+    );
+
+    // Upload icon component
+    const UploadIcon = ({ size = 16 }) => (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+    );
+
+    function App() {
+      const handleBackClick = () => {
+        console.log('Navigate back');
+        alert('Back button clicked - would navigate to previous page');
+      };
+
+      const handleSkipClick = () => {
+        console.log('Skip intake form');
+        alert('Skip button clicked - would skip to next step');
+      };
+
+      return (
+        <>
+          <Sidenav
+            activeItem="Transactions"
+            notificationCount={4}
+            userName="John Doe"
+            userRole="Agent"
+            userInitials="JD"
+          />
+          <div style={{ marginLeft: '256px' }}>
+            {/* Top Bar - Fixed Navigation */}
+            <div
+              className="fixed top-0 bg-white border-b border-gray-200"
+              style={{
+                left: '256px',
+                right: 0,
+                height: '64px',
+                zIndex: 40
+              }}
+            >
+              <div className="flex items-center justify-between h-full px-8">
+                {/* Left Section: Back Button + Title */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleBackClick}
+                    className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors text-gray-700"
+                    aria-label="Go back"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                  <h1 className="text-xl font-semibold text-gray-900">
+                    New Agreement Form
+                  </h1>
+                </div>
+
+                {/* Right Section: Skip Button */}
+                <button
+                  onClick={handleSkipClick}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                  Skip Intake Form
+                </button>
+              </div>
+            </div>
+
+            {/* Main Content with Top Padding */}
+            <div style={{ paddingTop: '96px' }}>
+              <AgreementIntakeForm />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    function AgreementIntakeForm() {
+      // State management
+      const [transactionType, setTransactionType] = useState('Buy');
+      const [ebraStatus, setEbraStatus] = useState('no');
+      const [hasReferral, setHasReferral] = useState('no');
+      const [referralType, setReferralType] = useState('Outside Broker');
+      const [bwReferralType, setBwReferralType] = useState('');
+      const [hasAdditionalAgent, setHasAdditionalAgent] = useState('no');
+
+      // Customers state
+      const [customers, setCustomers] = useState([
+        { id: 1, name: '', email: '', phone: '', address: '', city: '' }
+      ]);
+
+      // Prospects state for B&W Referral
+      const [prospects, setProspects] = useState([
+        { id: 1, firstName: '', lastName: '', address: '' }
+      ]);
+
+      // List transaction state
+      const [listPropertyType, setListPropertyType] = useState('');
+      const [listSideCompensation, setListSideCompensation] = useState('');
+      const [hasReferralFeeList, setHasReferralFeeList] = useState('no');
+
+      // Form data state
+      const [formData, setFormData] = useState({
+        searchLocation: '',
+        fromDate: '',
+        toDate: '',
+        retainerFee: '',
+        compensationPercentage: '',
+        compensationAmount: '',
+        referralAgentName: '',
+        referralPercentage: '',
+        referralPaymentAmount: '',
+        referralAgentRole: '',
+        referralPaymentType: '$', // % or $ - default to $
+        outsideBrokerage: '',
+        foundOutsideBroker: 'yes',
+        prospectFirstName: '',
+        prospectLastName: '',
+        prospectAddress: '',
+        agentName: '',
+        agentEmail: '',
+        agentPhone: '',
+        additionalAgentName: '',
+        additionalAgentEmail: '',
+        additionalAgentPhone: ''
+      });
+
+      // Helper functions
+      const shouldShowEbraSection = () => {
+        return transactionType === 'Buy' || transactionType === 'Lease';
+      };
+
+      const shouldShowConditionalSections = () => {
+        return shouldShowEbraSection() && ebraStatus === 'no';
+      };
+
+      const getEbraLabel = () => {
+        return transactionType === 'Buy' ? 'Do you have a signed EBRA?' : 'Do you have a signed ETRA?';
+      };
+
+      const getAgentLabel = () => {
+        const prefix = transactionType === 'Lease' ? "Tenant's" : "Buyer's";
+        return prefix;
+      };
+
+      const handleInputChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+      };
+
+      // Customer management handlers
+      const handleAddCustomer = () => {
+        const newId = Math.max(...customers.map(c => c.id)) + 1;
+        setCustomers([...customers, {
+          id: newId,
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          city: ''
+        }]);
+      };
+
+      const handleRemoveCustomer = (customerId) => {
+        if (customers.length > 1) {
+          setCustomers(customers.filter(c => c.id !== customerId));
+        }
+      };
+
+      const handleCustomerChange = (customerId, field, value) => {
+        setCustomers(customers.map(customer =>
+          customer.id === customerId
+            ? { ...customer, [field]: value }
+            : customer
+        ));
+      };
+
+      // Prospect management handlers
+      const handleAddProspect = () => {
+        const newId = Math.max(...prospects.map(p => p.id)) + 1;
+        setProspects([...prospects, {
+          id: newId,
+          firstName: '',
+          lastName: '',
+          address: ''
+        }]);
+      };
+
+      const handleRemoveProspect = (prospectId) => {
+        if (prospects.length > 1) {
+          setProspects(prospects.filter(p => p.id !== prospectId));
+        }
+      };
+
+      const handleProspectChange = (prospectId, field, value) => {
+        setProspects(prospects.map(prospect =>
+          prospect.id === prospectId
+            ? { ...prospect, [field]: value }
+            : prospect
+        ));
+      };
+
+      const handleUploadClick = () => {
+        console.log('File upload clicked');
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        console.log('Form Data:', {
+          transactionType,
+          ebraStatus,
+          hasReferral,
+          referralType,
+          bwReferralType,
+          hasAdditionalAgent,
+          customers,
+          prospects,
+          ...formData
+        });
+        alert('Form submitted successfully! Check console for form data.');
+      };
+
+      const handleCancel = () => {
+        if (confirm('Are you sure you want to cancel? All form data will be lost.')) {
+          window.location.reload();
+        }
+      };
+
+      return (
+        <div className="max-w-[870px] mx-auto px-4 py-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+
+            {/* Transaction Type Section */}
+            <div className="bg-white rounded-lg shadow-sm p-10">
+              <h2 className="text-xl font-bold mb-6">Transaction Type</h2>
+              <div>
+                <label className="block text-sm mb-2">
+                  Transaction Type <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={transactionType}
+                    onChange={(e) => setTransactionType(e.target.value)}
+                    required
+                    className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                  >
+                    <option value="Buy">Buy</option>
+                    <option value="Lease">Lease</option>
+                    <option value="List">List</option>
+                  </select>
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Customer Info Section */}
+            <div className="bg-white rounded-lg shadow-sm p-10">
+              {/* Section Header */}
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Customer Info</h2>
+
+              {/* Customer Fields */}
+              {customers.map((customer, index) => (
+                <div
+                  key={customer.id}
+                  className={index > 0 ? 'mt-6 pt-6 border-t border-gray-200' : ''}
+                >
+                  {/* Customer Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-semibold text-gray-700">
+                      Customer {index + 1}
+                    </h3>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomer(customer.id)}
+                        className="px-3 py-1 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Fields for this customer */}
+                  <div className="space-y-4">
+                    {/* Name */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Customer Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customer.name}
+                        onChange={(e) => handleCustomerChange(customer.id, 'name', e.target.value)}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Email and Phone side by side */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={customer.email}
+                          onChange={(e) => handleCustomerChange(customer.id, 'email', e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Phone <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={customer.phone}
+                          onChange={(e) => handleCustomerChange(customer.id, 'phone', e.target.value)}
+                          required
+                          placeholder="(555) 555-5555"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Address and City side by side */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Address <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={customer.address}
+                          onChange={(e) => handleCustomerChange(customer.id, 'address', e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          City <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={customer.city}
+                          onChange={(e) => handleCustomerChange(customer.id, 'city', e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Add Another Customer Button - Bottom */}
+              <button
+                type="button"
+                onClick={handleAddCustomer}
+                className="mt-6 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <PlusIcon size={16} />
+                <span>Add Another Customer</span>
+              </button>
+            </div>
+
+            {/* LIST TRANSACTION SECTIONS */}
+            {transactionType === 'List' && (
+              <>
+                {/* Listing Basics */}
+                <div className="bg-white rounded-lg shadow-sm p-10">
+                  <h2 className="text-xl font-bold mb-6">Listing Basics</h2>
+                  <div className="space-y-4">
+                    {/* Property type */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Property type <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={listPropertyType}
+                          onChange={(e) => setListPropertyType(e.target.value)}
+                          required
+                          className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                        >
+                          <option value="">Select</option>
+                          <option value="Attached">Attached</option>
+                          <option value="Detached">Detached</option>
+                          <option value="Two - Four Units">Two - Four Units</option>
+                          <option value="Residential Rental">Residential Rental</option>
+                          <option value="Vacant Land">Vacant Land</option>
+                        </select>
+                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Street address */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Street address <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 123 Main Street"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Unit # - Conditional */}
+                    {(listPropertyType === 'Attached' || listPropertyType === 'Two - Four Units') && (
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Unit # (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+
+                    {/* City, State, Zip code */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm mb-2">
+                          City <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. San Francisco"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          State <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <select
+                            required
+                            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                          >
+                            <option value="">Select</option>
+                            <option value="CA">CA</option>
+                            <option value="NY">NY</option>
+                          </select>
+                          <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Zip code <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. 94102"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Date agreement begins, Expiration date */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Date agreement begins <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Expiration date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* List price */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        List price <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        required
+                        placeholder="e.g. $500,000"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 italic mt-2">
+                        *If you need to modify the list price after your clients have signed, please use the Listing Modification form.
+                      </p>
+                    </div>
+
+                    {/* Attorney name */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Attorney name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Max Smith"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Email, Phone */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          placeholder="e.g. max@example.com"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Phone
+                        </label>
+                        <input
+                          type="tel"
+                          placeholder="e.g. (555) 123-4567"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Are you working with Baird & Warner Title Services? */}
+                    <div>
+                      <label className="block text-sm mb-3">
+                        Are you working with Baird & Warner Title Services? <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="bwTitleServices"
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">Yes</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="bwTitleServices"
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">No</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Prompt after basic listing details */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-800">
+                        This will be saved for when you're ready to start your PLN/MLS draft. We will pre-fill as many listing details as possible for you to edit and review.
+                      </p>
+                    </div>
+
+                    {/* Real estate taxes, Property pin # */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Real estate taxes (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Property pin # (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Commission */}
+                <div className="bg-white rounded-lg shadow-sm p-10">
+                  <h2 className="text-xl font-bold mb-6">Commission</h2>
+                  <div className="space-y-4">
+                    {/* List side compensation */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        List side compensation <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={listSideCompensation}
+                          onChange={(e) => setListSideCompensation(e.target.value)}
+                          required
+                          className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                        >
+                          <option value="">Select</option>
+                          <option value="2.5%">2.5%</option>
+                          <option value="2.75%">2.75%</option>
+                          <option value="3%">3%</option>
+                          <option value="3.25%">3.25%</option>
+                          <option value="3.5%">3.5%</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* If other is selected - Conditional */}
+                    {listSideCompensation === 'Other' && (
+                      <div>
+                        <label className="block text-sm mb-2">
+                          If other is selected <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          required
+                          placeholder="Enter custom percentage"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+
+                    {/* Buyer unrepresented % */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Buyer unrepresented % <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        required
+                        placeholder="e.g. 3%"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Other compensation */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Other compensation
+                      </label>
+                      <textarea
+                        rows="3"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Property Disclosures & Conditions */}
+                <div className="bg-white rounded-lg shadow-sm p-10">
+                  <h2 className="text-xl font-bold mb-6">Property Disclosures & Conditions</h2>
+                  <div className="space-y-4">
+                    {/* Is this property going in the Private Listing Network (PLN)? */}
+                    <div>
+                      <label className="block text-sm mb-3">
+                        Is this property going in the Private Listing Network (PLN)? <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="pln"
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">Yes</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="pln"
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">No</span>
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-500 italic mt-2">
+                        *Select Yes if this listing will be entered as a PLN before going live on the MLS.
+                      </p>
+                    </div>
+
+                    {/* Property Year Built */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        What year was the home built? <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 2024"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Condo / Apartment Specific - Floor Number (conditional on Attached) */}
+                    {listPropertyType === 'Attached' && (
+                      <div>
+                        <label className="block text-sm mb-2">
+                          What floor is the unit on? (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 3"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 italic mt-2">
+                          *If unit is on 3rd floor or higher, Radon Disclosure will not be included in required forms
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Referral */}
+                <div className="bg-white rounded-lg shadow-sm p-10">
+                  <h2 className="text-xl font-bold mb-6">Referral</h2>
+                  <div className="space-y-4">
+                    {/* Do you owe a referral fee for this listing? */}
+                    <div>
+                      <label className="block text-sm mb-3">
+                        Do you owe a referral fee? <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="referralFeeList"
+                            value="yes"
+                            checked={hasReferralFeeList === 'yes'}
+                            onChange={(e) => setHasReferralFeeList(e.target.value)}
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">Yes</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="referralFeeList"
+                            value="no"
+                            checked={hasReferralFeeList === 'no'}
+                            onChange={(e) => setHasReferralFeeList(e.target.value)}
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">No</span>
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-500 italic mt-2">
+                        *Select Yes if this transaction involves an outside broker, intra-office referral, or relocation lead.
+                      </p>
+                    </div>
+
+                    {/* Referral Type - conditional on Yes */}
+                    {hasReferralFeeList === 'yes' && (
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Referral Type <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <select
+                            required={hasReferralFeeList === 'yes'}
+                            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                          >
+                            <option value="">Select</option>
+                            <option value="Outside Broker">Outside Broker</option>
+                            <option value="Intra-Office Referral">Intra-Office Referral</option>
+                            <option value="E-Business">E-Business</option>
+                            <option value="Relocation">Relocation</option>
+                          </select>
+                          <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* MLS Exemption */}
+                <div className="bg-white rounded-lg shadow-sm p-10">
+                  <h2 className="text-xl font-bold mb-6">MLS Exemption</h2>
+                  <div className="space-y-4">
+                    {/* Are you planning to list the property within 48 hours or less? */}
+                    <div>
+                      <label className="block text-sm mb-3">
+                        Are you planning to list the property within 48 hours or less? <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="mlsExemption"
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">Yes</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="mlsExemption"
+                            required
+                            className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm">No</span>
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-500 italic mt-2">
+                        *If No, the system will include the MLS Exemption Form in required docs.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* EBRA/ETRA Status Section - Conditional */}
+            {shouldShowEbraSection() && (
+              <div className="bg-white rounded-lg shadow-sm p-10">
+                <h2 className="text-xl font-bold mb-6">{transactionType === 'Buy' ? 'EBRA' : 'ETRA'} Status</h2>
+                <div>
+                  <label className="block text-sm mb-3">
+                    {getEbraLabel()} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="space-y-3">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="no"
+                        checked={ebraStatus === 'no'}
+                        onChange={(e) => setEbraStatus(e.target.value)}
+                        className="mr-3 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">No, I need to create one</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="yes"
+                        checked={ebraStatus === 'yes'}
+                        onChange={(e) => setEbraStatus(e.target.value)}
+                        className="mr-3 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Yes, I have a signed {transactionType === 'Buy' ? 'EBRA' : 'ETRA'}</span>
+                    </label>
+                  </div>
+                  {ebraStatus === 'yes' && (
+                    <div className="mt-6">
+                      <label className="block text-sm mb-2">
+                        Upload your signed {transactionType === 'Buy' ? 'EBRA' : 'ETRA'} and other documents. The system will not generate new {transactionType === 'Buy' ? 'EBRA' : 'ETRA'} documents.
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleUploadClick}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <UploadIcon size={16} />
+                        <span>Upload</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Representation Info Section - Conditional */}
+            {shouldShowConditionalSections() && (
+              <div className="bg-white rounded-lg shadow-sm p-10">
+                <h2 className="text-xl font-bold mb-6">Representation Info</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-2">
+                      Enter towns or counties your client is searching in <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.searchLocation}
+                      onChange={(e) => handleInputChange('searchLocation', e.target.value)}
+                      required={shouldShowConditionalSections()}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm mb-2">
+                        From Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.fromDate}
+                        onChange={(e) => handleInputChange('fromDate', e.target.value)}
+                        required={shouldShowConditionalSections()}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2">
+                        To Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.toDate}
+                        onChange={(e) => handleInputChange('toDate', e.target.value)}
+                        required={shouldShowConditionalSections()}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Compensation Terms Section - Conditional */}
+            {shouldShowConditionalSections() && (
+              <div className="bg-white rounded-lg shadow-sm p-10">
+                <h2 className="text-xl font-bold mb-6">Compensation Terms</h2>
+                <div className="space-y-4">
+                  {transactionType === 'Buy' ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Retainer Fee (If applicable)
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={formData.retainerFee}
+                            onChange={(e) => handleInputChange('retainerFee', e.target.value)}
+                            placeholder="0.00"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Compensation Percentage <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={formData.compensationPercentage}
+                              onChange={(e) => handleInputChange('compensationPercentage', e.target.value)}
+                              required={shouldShowConditionalSections()}
+                              placeholder="0.00"
+                              className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm font-medium">Buyer flat fee: $495</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Compensation <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={formData.compensationAmount}
+                            onChange={(e) => handleInputChange('compensationAmount', e.target.value)}
+                            required={shouldShowConditionalSections()}
+                            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                          >
+                            <option value="">Select</option>
+                            <option value="One-half month's rent of the initial lease term">One-half month's rent of the initial lease term</option>
+                            <option value="Compensation Amount">Compensation Amount</option>
+                            <option value="One-half month's rent of the initial lease term and Compensation Amount">One-half month's rent of the initial lease term and Compensation Amount</option>
+                          </select>
+                          <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Retainer Fee (If applicable)
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={formData.retainerFee}
+                          onChange={(e) => handleInputChange('retainerFee', e.target.value)}
+                          placeholder="0.00"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm font-medium">Tenant flat fee: $495</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Referral Information Section */}
+            <div className="bg-white rounded-lg shadow-sm p-10">
+              <h2 className="text-xl font-bold mb-6">Referral Information</h2>
+              <div className="space-y-4">
+                {/* Is there a referral? */}
+                <div>
+                  <label className="block text-sm mb-3">
+                    Is there a referral?
+                  </label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="no"
+                        checked={hasReferral === 'no'}
+                        onChange={(e) => setHasReferral(e.target.value)}
+                        className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">No</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="yes"
+                        checked={hasReferral === 'yes'}
+                        onChange={(e) => setHasReferral(e.target.value)}
+                        className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Yes</span>
+                    </label>
+                  </div>
+                </div>
+
+                {hasReferral === 'yes' && (
+                  <div className="space-y-4 pt-4">
+                    {/* What Type of Referral? */}
+                    <div>
+                      <label className="block text-sm mb-2">
+                        What Type of Referral? <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={referralType}
+                          onChange={(e) => {
+                            setReferralType(e.target.value);
+                            // Clear fields when referral type changes
+                            setFormData({
+                              ...formData,
+                              referralAgentName: '',
+                              referralPercentage: '',
+                              referralPaymentAmount: '',
+                              referralAgentRole: '',
+                              referralPaymentType: '',
+                              outsideBrokerage: '',
+                              foundOutsideBroker: 'yes'
+                            });
+                            setBwReferralType('');
+                          }}
+                          required={hasReferral === 'yes'}
+                          className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                        >
+                          <option value="Outside Broker">Outside Broker</option>
+                          <option value="Intra Office">Intra Office</option>
+                          <option value="B&W Referral">B&W Referral</option>
+                        </select>
+                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Outside Broker Fields */}
+                    {referralType === 'Outside Broker' && (
+                      <div className="space-y-4">
+                        {/* Agent Name */}
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Agent Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.referralAgentName}
+                            onChange={(e) => handleInputChange('referralAgentName', e.target.value)}
+                            required={hasReferral === 'yes' && referralType === 'Outside Broker'}
+                            placeholder="Enter agent name"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        {/* Referral Amount with $ or % selection */}
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Referral Fee Structure <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex gap-4">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                value="$"
+                                checked={formData.referralPaymentType === '$'}
+                                onChange={(e) => handleInputChange('referralPaymentType', e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'Outside Broker'}
+                                className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">Fixed Amount ($)</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                value="%"
+                                checked={formData.referralPaymentType === '%'}
+                                onChange={(e) => handleInputChange('referralPaymentType', e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'Outside Broker'}
+                                className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">Percentage (%)</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Referral Amount Input - shown only when type is selected */}
+                        {formData.referralPaymentType && (
+                          <div>
+                            <label className="block text-sm mb-2">
+                              Referral Fee Amount <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={formData.referralPaymentAmount}
+                              onChange={(e) => handleInputChange('referralPaymentAmount', e.target.value)}
+                              required={hasReferral === 'yes' && referralType === 'Outside Broker'}
+                              placeholder={formData.referralPaymentType === '$' ? 'Enter dollar amount' : 'Enter percentage'}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        )}
+
+                        {/* Upload Section */}
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Supporting Documents
+                          </label>
+                          <div className="bg-gray-50 p-6 rounded-lg">
+                            <p className="text-sm mb-3">
+                              Please upload supporting documents for Outside brokerage Referral agreement
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleUploadClick}
+                              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <UploadIcon size={16} />
+                              <span>Upload</span>
+                            </button>
+                            <p className="text-sm text-gray-500 mt-3">
+                              We will add an empty template of your required document within your transaction if you don't upload one.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Outside Brokerage */}
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Outside Brokerage
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={formData.outsideBrokerage}
+                              onChange={(e) => handleInputChange('outsideBrokerage', e.target.value)}
+                              className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                            >
+                              <option value="">--- Select a Value ---</option>
+                              <option value="Brokerage 1">Brokerage 1</option>
+                              <option value="Brokerage 2">Brokerage 2</option>
+                            </select>
+                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Did you find the outside broker above? */}
+                        <div>
+                          <label className="block text-sm mb-3">
+                            Did you find the outside broker above? <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex gap-6">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                value="yes"
+                                checked={formData.foundOutsideBroker === 'yes'}
+                                onChange={(e) => handleInputChange('foundOutsideBroker', e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'Outside Broker'}
+                                className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">Yes</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                value="no"
+                                checked={formData.foundOutsideBroker === 'no'}
+                                onChange={(e) => handleInputChange('foundOutsideBroker', e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'Outside Broker'}
+                                className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">No</span>
+                            </label>
+                          </div>
+
+                          {/* W9 Upload Section - shown when "No" is selected */}
+                          {formData.foundOutsideBroker === 'no' && (
+                            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <p className="text-sm text-yellow-800 font-medium mb-3">
+                                Form cannot be submitted until the W9 document is attached.
+                              </p>
+                              <p className="text-sm mb-2">
+                                Please add supporting documents for W9
+                              </p>
+                              <button
+                                type="button"
+                                onClick={handleUploadClick}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                <UploadIcon size={16} />
+                                <span>Upload</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Intra Office Fields */}
+                    {referralType === 'Intra Office' && (
+                      <div className="space-y-4">
+                        {/* Upload Section */}
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Supporting Documents
+                          </label>
+                          <div className="bg-gray-50 p-6 rounded-lg">
+                            <p className="text-sm mb-3">
+                              Please add supporting documents for Referral Agreement Document
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleUploadClick}
+                              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <UploadIcon size={16} />
+                              <span>Upload</span>
+                            </button>
+                            <p className="text-sm text-gray-500 mt-3">
+                              We will add an empty template of your required document within your transaction if you don't upload one.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Agent Name */}
+                        <div>
+                          <label className="block text-sm mb-2">
+                            Agent Name <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={formData.referralAgentName}
+                              onChange={(e) => handleInputChange('referralAgentName', e.target.value)}
+                              required={hasReferral === 'yes' && referralType === 'Intra Office'}
+                              className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                            >
+                              <option value="">Search for an agent...</option>
+                              <option value="Agent 1">Agent 1</option>
+                              <option value="Agent 2">Agent 2</option>
+                            </select>
+                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Agent's Role, % Or $, Payment Amount */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm mb-2">
+                              Agent's Role
+                            </label>
+                            <input
+                              type="text"
+                              value="Referral"
+                              readOnly
+                              disabled
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm mb-2">
+                              % Or $ <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={formData.referralPaymentType}
+                                onChange={(e) => handleInputChange('referralPaymentType', e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'Intra Office'}
+                                className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 appearance-none bg-white"
+                              >
+                                <option value="">--Select--</option>
+                                <option value="%">%</option>
+                                <option value="$">$</option>
+                              </select>
+                              <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm mb-2">
+                              Payment Amount <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={formData.referralPaymentAmount}
+                              onChange={(e) => handleInputChange('referralPaymentAmount', e.target.value)}
+                              required={hasReferral === 'yes' && referralType === 'Intra Office'}
+                              placeholder="Enter amount"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* B&W Referral Fields */}
+                    {referralType === 'B&W Referral' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm mb-3">
+                            B&W Referral ? <span className="text-red-500">*</span>
+                          </label>
+                          <div className="space-y-3">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                value="BW EBiz (Zillow, Op City, etc)"
+                                checked={bwReferralType === 'BW EBiz (Zillow, Op City, etc)'}
+                                onChange={(e) => setBwReferralType(e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'B&W Referral'}
+                                className="mr-3 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">BW EBiz (Zillow, Op City, etc)</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                value="BW PPN Referral"
+                                checked={bwReferralType === 'BW PPN Referral'}
+                                onChange={(e) => setBwReferralType(e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'B&W Referral'}
+                                className="mr-3 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">BW PPN Referral</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                value="BW Relocation"
+                                checked={bwReferralType === 'BW Relocation'}
+                                onChange={(e) => setBwReferralType(e.target.value)}
+                                required={hasReferral === 'yes' && referralType === 'B&W Referral'}
+                                className="mr-3 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">BW Relocation</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Prospect Section - shown for BW PPN Referral or BW Relocation */}
+                        {(bwReferralType === 'BW PPN Referral' || bwReferralType === 'BW Relocation') && (
+                          <div>
+                            <h3 className="text-lg font-bold mb-4">Prospect</h3>
+
+                            {prospects.map((prospect, index) => (
+                              <div
+                                key={prospect.id}
+                                className={index > 0 ? 'mt-6 pt-6 border-t border-gray-200' : ''}
+                              >
+                                {/* Prospect Header */}
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="text-base font-semibold text-gray-700">
+                                    Prospect {index + 1}
+                                  </h4>
+                                  {index > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveProspect(prospect.id)}
+                                      className="px-3 py-1 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                    >
+                                      Remove
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Prospect Fields */}
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div>
+                                    <label className="block text-sm mb-2">
+                                      Prospect First Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={prospect.firstName}
+                                      onChange={(e) => handleProspectChange(prospect.id, 'firstName', e.target.value)}
+                                      required={bwReferralType === 'BW PPN Referral' || bwReferralType === 'BW Relocation'}
+                                      placeholder="Enter first name"
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm mb-2">
+                                      Prospect Last Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={prospect.lastName}
+                                      onChange={(e) => handleProspectChange(prospect.id, 'lastName', e.target.value)}
+                                      required={bwReferralType === 'BW PPN Referral' || bwReferralType === 'BW Relocation'}
+                                      placeholder="Enter last name"
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                    />
+                                  </div>
+                                  <div className="relative">
+                                    <label className="block text-sm mb-2">
+                                      Address
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={prospect.address}
+                                      onChange={(e) => handleProspectChange(prospect.id, 'address', e.target.value)}
+                                      placeholder="Enter address"
+                                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                    />
+                                    {prospect.address && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleProspectChange(prospect.id, 'address', '')}
+                                        className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+                                        aria-label="Clear address"
+                                      >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <path d="M18 6L6 18M6 6l12 12" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+
+                            <button
+                              type="button"
+                              onClick={handleAddProspect}
+                              className="mt-6 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <PlusIcon size={16} />
+                              <span>Add Prospect</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Agent Details Section */}
+            <div className="bg-white rounded-lg shadow-sm p-10">
+              <h2 className="text-xl font-bold mb-6">Agent Details</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm mb-2">
+                    {getAgentLabel()} Agent Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.agentName}
+                    onChange={(e) => handleInputChange('agentName', e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-2">
+                      {getAgentLabel()} Agent Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.agentEmail}
+                      onChange={(e) => handleInputChange('agentEmail', e.target.value)}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-2">
+                      {getAgentLabel()} Agent Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.agentPhone}
+                      onChange={(e) => handleInputChange('agentPhone', e.target.value)}
+                      required
+                      placeholder="(555) 555-5555"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm mb-3">
+                    Additional designated agent?
+                  </label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="no"
+                        checked={hasAdditionalAgent === 'no'}
+                        onChange={(e) => setHasAdditionalAgent(e.target.value)}
+                        className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">No</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="yes"
+                        checked={hasAdditionalAgent === 'yes'}
+                        onChange={(e) => setHasAdditionalAgent(e.target.value)}
+                        className="mr-2 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Yes</span>
+                    </label>
+                  </div>
+                </div>
+
+                {hasAdditionalAgent === 'yes' && (
+                  <div className="space-y-4 pt-4">
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Additional Agent Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.additionalAgentName}
+                        onChange={(e) => handleInputChange('additionalAgentName', e.target.value)}
+                        required={hasAdditionalAgent === 'yes'}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Additional Agent Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.additionalAgentEmail}
+                          onChange={(e) => handleInputChange('additionalAgentEmail', e.target.value)}
+                          required={hasAdditionalAgent === 'yes'}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-2">
+                          Additional Agent Phone <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.additionalAgentPhone}
+                          onChange={(e) => handleInputChange('additionalAgentPhone', e.target.value)}
+                          required={hasAdditionalAgent === 'yes'}
+                          placeholder="(555) 555-5555"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 pb-8">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Submit
+              </button>
+            </div>
+
+          </form>
+        </div>
+      );
+    }
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
