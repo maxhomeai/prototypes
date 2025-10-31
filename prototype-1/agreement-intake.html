@@ -175,9 +175,9 @@
         prospectFirstName: '',
         prospectLastName: '',
         prospectAddress: '',
-        agentName: '',
-        agentEmail: '',
-        agentPhone: '',
+        agentName: 'John Doe',
+        agentEmail: 'john.doe@maxhome.ai',
+        agentPhone: '(555) 123-4567',
         additionalAgentName: '',
         additionalAgentEmail: '',
         additionalAgentPhone: ''
@@ -274,7 +274,14 @@
           prospects,
           ...formData
         });
-        alert('Form submitted successfully! Check console for form data.');
+
+        // Navigate to transaction view with URL parameters
+        const params = new URLSearchParams({
+          type: transactionType.toLowerCase(),
+          customer: customers[0]?.name || 'Customer Name',
+          agent: formData.agentName || 'Agent Name'
+        });
+        window.location.href = `transaction-view.html?${params.toString()}`;
       };
 
       const handleCancel = () => {
