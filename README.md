@@ -46,7 +46,7 @@ open prototype-1/agreement-intake.html
 This repository is hosted on GitHub Pages at: `maxhome.github.io/prototypes`
 
 Access prototypes via:
-- `maxhome.github.io/prototypes/prototype-1/agreement-intake.html`
+- `maxhomeai.github.io/prototypes/prototype-1/agreement-intake.html`
 
 ## Development Workflow
 
